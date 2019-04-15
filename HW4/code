@@ -37,7 +37,7 @@
 #pragma config FUSBIDIO = ON // USB pins controlled by USB module
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
-#define CS LATBbits.LATB8       // chip select pin
+#define CS LATAbits.LATA0       // chip select pin
 
 // send a byte via spi and return the response
 unsigned char spi_io(unsigned char o) {
@@ -51,8 +51,8 @@ unsigned char spi_io(unsigned char o) {
 void setVoltage(char a, int v) {
 	unsigned short t;
 	t= a << 15; //a is at the very end of the data transfer
-	t = t | 0b01110000000000000;
-	t = t | ((v&0b1111111111) <<2); //rejecting excessive bits (above 10)
+	t = t | 0b0111000000000000; //setting the values for the configuration
+	t = t | ((v&0b111111111111)); //rejecting excessive bits (above 10)
 	
 	CS = 0;
 	spi_io(t>>8);
@@ -64,15 +64,15 @@ void initSPI1(){
 // the chip select pin is used by the sram to indicate when a command is beginning (clear CS to low) and when it is ending (set CS high)
   TRISAbits.TRISA0 = 0; // set up the chip select pin as an output
   CS = 1; //no communication
-  // setup spi4
+  // setup spi1
   RPA1Rbits.RPA1R = 0b0011; //set pin A1 as output SDO1
   SPI1CON = 0;              // turn off the spi module and reset it
   SPI1BUF;                  // clear the rx buffer by reading from it
-  SPI1BRG = 03;             // baud rate to 10 MHz [SPI4BRG = (80000000/(2*desired))-1]
+  SPI1BRG = 03;             // baud rate to 10 MHz [SPI1BRG = (80000000/(2*desired))-1]
   SPI1STATbits.SPIROV = 0;  // clear the overflow bit
   SPI1CONbits.CKE = 1;      // data changes when clock goes from hi to lo (since CKP is 0)
   SPI1CONbits.MSTEN = 1;    // master operation
-  SPI1CONbits.ON = 1;       // turn on spi 4
+  SPI1CONbits.ON = 1;       // turn on spi 1
 }
 int main() {
 
@@ -96,14 +96,14 @@ int main() {
     LATAbits.LATA4=1; //set the initial output of pin A4 to high (3.3V))
 
     __builtin_enable_interrupts();
-        
+    initSPI1();    
     _CP0_SET_COUNT(0);
     
         double a=0;
         double x=0;
         double dx = 0.0314*2;
         float b=0;
-        float db=5.12;
+        float db=40.96;
         
     while(1) {
 	
@@ -111,17 +111,17 @@ int main() {
         
         setVoltage(0,b); //channel B set to 0.825V     
         
-        a = 512/2 + 512/2*sin(x);
+        a = 4096/2 + 4096/2*sin(x);
         x=x+dx;
         
         b=b+db; //slowly increase b such that half a triangle of 3.3V height is constructed in 100ms (b uodated every 1ms)
-        if (b>512){ //when reached top of triangle start going down
+        if (b>4096){ //when reached top of triangle start going down
             db=-db;
         }
         if (b<1){ //when reached bottom of triangle start going back up
             db=-db;
         }
-        
+        _CP0_SET_COUNT(0);
          while(_CP0_GET_COUNT()< 24000){ //while loop with frequency 1kHz}
 	 
     }

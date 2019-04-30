@@ -115,7 +115,7 @@ int main() {
         x=x+dx;
         
         b=b+db; //slowly increase b such that half a triangle of 3.3V height is constructed in 100ms (b uodated every 1ms)
-        if (b>4096){ //when reached top of triangle start going down
+        if (b>=4096){ //when reached top of triangle start going down
             db=-db;
         }
         if (b<1){ //when reached bottom of triangle start going back up
